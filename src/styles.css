@@ -360,17 +360,6 @@ img { max-width: 100%; display: block; }
 }
 .gp-input::placeholder, .gp-textarea::placeholder { color: var(--steel-400); }
 .gp-input:focus, .gp-textarea:focus, .gp-select:focus { border-color: var(--gold-300); }
-.gp-input[aria-invalid="true"], .gp-textarea[aria-invalid="true"] { border-color: #e0736b; }
-/* Formspree ValidationError messages */
-.gp-form-error {
-  display: block;
-  margin-top: 8px;
-  color: #e0736b;
-  font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-.gp-form-error:empty { display: none; }
 .gp-label {
   font-family: var(--f-mono);
   font-size: 10px;
@@ -398,7 +387,6 @@ img { max-width: 100%; display: block; }
 }
 @media (max-width: 620px) {
   .gp-grid-2, .gp-grid-3, .gp-grid-4 { grid-template-columns: 1fr; }
-  .gp-nav-links { display: none; }
 }
 
 /* Pulse dot for "live" indicator */
@@ -599,17 +587,6 @@ img { max-width: 100%; display: block; }
   .hc-svg { height: 240px; }
 }
 
-@media (max-width: 1180px) {
-  .gp-nav-links { gap: 22px; }
-  .gp-nav-links a { font-size: 12px; }
-  .gp-nav .gp-btn-gold { height: 44px; padding: 0 18px; font-size: 12px; }
-}
-@media (max-width: 980px) {
-  .gp-nav-links { display: none; }
-  .hp-ticker, .hp-tile { display: none; }
-  .hero-portrait { aspect-ratio: 5 / 6; }
-}
-
 /* Compass crosshair (decorative) */
 .gp-crosshair {
   display: inline-flex; align-items: center; justify-content: center;
@@ -621,13 +598,271 @@ img { max-width: 100%; display: block; }
 }
 .gp-crosshair::before { left: 0; right: 0; top: 50%; height: 1px; transform: translateY(-50%); }
 .gp-crosshair::after  { top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); }
-.gp-crosshair {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px;
-  position: relative;
+
+/* ============================================================
+   MOBILE NAV (hamburger + drawer)
+   ============================================================ */
+.gp-burger {
+  display: none;
+  width: 44px; height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-left: 8px;
+  flex-shrink: 0;
 }
-.gp-crosshair::before, .gp-crosshair::after {
-  content: ""; position: absolute; background: var(--gold-300);
+.gp-burger span {
+  display: block;
+  width: 22px; height: 1.5px;
+  background: var(--bone-100);
+  transition: transform .3s ease, opacity .3s ease;
 }
-.gp-crosshair::before { left: 0; right: 0; top: 50%; height: 1px; transform: translateY(-50%); }
-.gp-crosshair::after  { top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); }
+.gp-burger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.gp-burger.open span:nth-child(2) { opacity: 0; }
+.gp-burger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+.gp-mobile-menu {
+  position: fixed;
+  top: 92px; left: 0; right: 0;
+  bottom: 0;
+  background: rgba(8, 11, 16, 0.98);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 32px var(--gutter) 48px;
+  transform: translateX(100%);
+  transition: transform .42s cubic-bezier(.2,.7,.2,1);
+  z-index: 99;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.gp-mobile-menu.open { transform: translateX(0); }
+.gp-mobile-links {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.gp-mobile-links a {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 22px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--f-display);
+  font-size: 28px;
+  letter-spacing: -0.025em;
+  color: var(--steel-100);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity .4s ease, transform .4s ease, color .2s ease;
+}
+.gp-mobile-menu.open .gp-mobile-links a { opacity: 1; transform: translateX(0); }
+.gp-mobile-links a.active { color: var(--gold-200); }
+.gp-mobile-links a .idx {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--gold-400);
+}
+.gp-mobile-foot {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gp-mobile-foot a {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--steel-300);
+}
+
+/* ============================================================
+   RESPONSIVE GRID COLLAPSE
+   Inline grids render the camelCase prop to a `grid-template-columns`
+   attribute value; !important here beats the non-important inline
+   declaration so multi-column layouts reflow. We enumerate the real
+   patterns in use and deliberately leave small functional grids
+   (icon / number / bullet + text) untouched.
+   ============================================================ */
+
+/* Laptop / small desktop */
+@media (max-width: 1180px) {
+  :root { --container: 1100px; }
+}
+
+/* Tablet & below: nav switches to drawer */
+@media (max-width: 1024px) {
+  .gp-nav-links { display: none; }
+  .gp-nav-cta { display: none; }
+  .gp-burger { display: flex; }
+
+  /* Card grids → two-up */
+  [style*="repeat(5"],
+  [style*="repeat(4"],
+  [style*="repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Editorial / sidebar splits → stacked */
+  [style*="grid-template-columns: 1.3fr 1fr"],
+  [style*="grid-template-columns: 1.1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1.4fr"],
+  [style*="grid-template-columns: 1fr 1.2fr"],
+  [style*="grid-template-columns: 1fr 2fr"],
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns: 320px 1fr"],
+  [style*="grid-template-columns: 260px 1fr"],
+  [style*="grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [style*="gap: 80px"] { gap: 44px !important; }
+  [style*="gap: 64px"] { gap: 40px !important; }
+}
+
+/* Phone */
+@media (max-width: 680px) {
+  :root { --gutter: 20px; }
+
+  .gp-section { padding: 64px 0; }
+  .gp-section-tight { padding: 48px 0; }
+
+  /* Everything from the tablet rules, plus card grids fully single-column */
+  [style*="repeat(5"],
+  [style*="repeat(4"],
+  [style*="repeat(3"],
+  [style*="repeat(2"] { grid-template-columns: 1fr !important; }
+
+  /* Section headers stack index / title / action */
+  [style*="grid-template-columns: auto 1fr auto"],
+  [style*="grid-template-columns: 1fr auto"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [style*="gap: 80px"],
+  [style*="gap: 64px"],
+  [style*="gap: 56px"],
+  [style*="gap: 48px"] { gap: 28px !important; }
+
+  /* Service rows: drop leading index column */
+  .gp-row { grid-template-columns: 1fr auto; gap: 16px; }
+  .gp-row:hover { padding-left: 0; }
+  .gp-row .gp-index { display: none; }
+
+  /* Marquee a touch smaller */
+  .gp-marquee-track { gap: 36px; }
+  .gp-marquee-track span { font-size: 18px !important; }
+
+  /* Hero chart breathing room */
+  .hc-frame { padding: 20px 18px 18px; }
+  .hc-svg { height: 200px; }
+  .hc-header { flex-wrap: wrap; gap: 12px; }
+  .hc-livetag { font-size: 9px; }
+
+  /* Tame oversized header / hero top padding on phones */
+  [style*="padding-top: 200"] { padding-top: 132px !important; }
+  [style*="padding-top: 140"] { padding-top: 116px !important; }
+
+  /* Tame oversized section spacing crammed via inline marginTop */
+  [style*="marginTop: 80"], [style*="margin-top: 80"] { margin-top: 48px !important; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .gp-mobile-links a { font-size: 24px; }
+}
+
+/* ============================================================
+   RESPONSIVE HARDENING (added for production launch)
+   Extra safety nets so the layout holds on every screen size,
+   including very wide desktops and notched / small phones.
+   ============================================================ */
+
+/* Media never forces horizontal scroll */
+img, svg, canvas, video { max-width: 100%; height: auto; }
+svg { height: auto; }
+.hc-svg { height: 280px; }          /* keep explicit chart height */
+
+/* Honor device safe areas (notched phones, gesture bars) */
+.gp-nav-inner { padding-left: max(var(--gutter), env(safe-area-inset-left));
+                padding-right: max(var(--gutter), env(safe-area-inset-right)); }
+.gp-mobile-menu { padding-left: max(var(--gutter), env(safe-area-inset-left));
+                  padding-right: max(var(--gutter), env(safe-area-inset-right)); }
+
+/* Large / ultrawide desktops: cap the container so lines stay readable */
+@media (min-width: 1700px) { :root { --container: 1440px; } }
+
+/* Tablet: button rows wrap gracefully */
+@media (max-width: 1024px) {
+  .gp-btn { white-space: normal; }
+}
+
+/* Phone: tighten typography + ensure full-width primary actions feel intentional */
+@media (max-width: 680px) {
+  .gp-btn { height: auto; min-height: 50px; padding: 12px 22px; }
+  .gp-h1 { font-size: clamp(38px, 11vw, 60px); }
+  .gp-nav { height: 72px; }
+  .gp-mobile-menu { top: 72px; }
+  /* Sticky sidebars (services / industries / legal) should not stick on phones */
+  [style*="position: sticky"] { position: static !important; top: auto !important; }
+  /* Hero chart KPI cards stay hidden; chart fills width cleanly */
+  .hero-chart { max-width: 100%; }
+}
+
+/* Very small phones: never let the chart header crowd */
+@media (max-width: 380px) {
+  .hc-header { flex-direction: column; }
+  .hc-header > div:last-child { text-align: left !important; }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .gp-reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ============================================================
+   FORM ERROR + NEW-PAGE RESPONSIVE GRIDS (production launch)
+   ============================================================ */
+
+/* Formspree ValidationError messages */
+.gp-form-error {
+  display: block;
+  color: #e0795f;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-top: 8px;
+  font-family: var(--f-sans);
+}
+
+/* Legal pages: contents rail collapses below the body on tablet/phone */
+@media (max-width: 1024px) {
+  .gp-legal-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+  .gp-legal-aside { position: static !important; top: auto !important; }
+}
+
+/* Insights featured article: two columns -> one */
+@media (max-width: 1024px) {
+  .gp-insights-featured { grid-template-columns: 1fr !important; gap: 40px !important; padding: 40px 0 !important; }
+  .gp-news-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+}
+
+/* Insights essay grid: 3 -> 2 -> 1 */
+@media (max-width: 1024px) {
+  .gp-insights-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  /* fix interior borders when 2-up: every odd card keeps right border */
+  .gp-insights-grid .gp-insights-card { border-right: 1px solid rgba(255,255,255,0.08) !important; }
+}
+@media (max-width: 680px) {
+  .gp-insights-grid { grid-template-columns: 1fr !important; }
+  .gp-insights-card { border-right: none !important; min-height: 0 !important; padding: 28px !important; }
+  /* Newsletter input + button stack on phones */
+  .gp-news-row { grid-template-columns: 1fr !important; gap: 14px !important; }
+  .gp-news-row .gp-btn { width: 100%; }
+}

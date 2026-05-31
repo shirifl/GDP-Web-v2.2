@@ -1,18 +1,36 @@
-// GoldPoint Digital, shared components
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import goldpointIcon from "./assets/goldpoint-icon.png";
+// GoldPoint Digital — shared components
+import React, { useState, useEffect, useRef } from "react";
+import iconUrl from "./assets/goldpoint-icon.png";
 
 /* ---------- Reveal on scroll ---------- */
-function Reveal({ as: Tag = "div", delay = 0, className = "", children, ...rest }) {
+export function Reveal({ as: Tag = "div", delay = 0, className = "", children, ...rest }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { el.classList.add("in"); io.unobserve(el); } }),
-      { threshold: 0.12 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    // Fail-open: if anything goes wrong, reveal after a beat so content is never stuck hidden.
+    const fallback = setTimeout(() => el.classList.add("in"), 1200);
+    // Reveal immediately if already within (or near) the viewport on mount.
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const r = el.getBoundingClientRect();
+    if (r.top < vh * 0.92 && r.bottom > 0) {
+      el.classList.add("in");
+      clearTimeout(fallback);
+      return () => {};
+    }
+    let io;
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver(
+        (entries) => entries.forEach(e => {
+          if (e.isIntersecting) { el.classList.add("in"); clearTimeout(fallback); io.unobserve(el); }
+        }),
+        { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+      );
+      io.observe(el);
+    } else {
+      el.classList.add("in");
+      clearTimeout(fallback);
+    }
+    return () => { clearTimeout(fallback); if (io) io.disconnect(); };
   }, []);
   return (
     <Tag ref={ref} data-delay={delay || undefined} className={`gp-reveal ${className}`} {...rest}>{children}</Tag>
@@ -20,10 +38,10 @@ function Reveal({ as: Tag = "div", delay = 0, className = "", children, ...rest 
 }
 
 /* ---------- Logo wordmark ---------- */
-function Logo({ onClick, large }) {
+export function Logo({ onClick, large }) {
   return (
     <a className={"gp-logo" + (large ? " gp-logo-lg" : "")} href="#/" onClick={(e) => { e.preventDefault(); onClick?.(); }}>
-      <img src={goldpointIcon} alt="GoldPoint Digital" className="gp-logo-icon" />
+      <img src={iconUrl} alt="GoldPoint Digital" className="gp-logo-icon" />
       <span className="gp-logo-wm">
         <span className="gp-logo-name">GoldPoint</span>
         <span className="gp-logo-tag">Digital</span>
@@ -43,32 +61,74 @@ const NAV = [
   { id: "contact", label: "Contact" },
 ];
 
-function Nav({ active, onNavigate }) {
+export function Nav({ active, onNavigate }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  const go = (id) => { setOpen(false); onNavigate(id); };
+
   return (
     <nav className="gp-nav">
       <div className="gp-nav-inner">
-        <Logo onClick={() => onNavigate("home")} />
+        <Logo onClick={() => go("home")} />
         <div className="gp-nav-links">
           {NAV.map(n => (
             <a
               key={n.id}
               href={`#/${n.id}`}
               className={active === n.id ? "active" : ""}
-              onClick={(e) => { e.preventDefault(); onNavigate(n.id); }}
+              onClick={(e) => { e.preventDefault(); go(n.id); }}
             >{n.label}</a>
           ))}
         </div>
-        <button className="gp-btn gp-btn-gold" onClick={() => onNavigate("contact")}>
+        <button className="gp-btn gp-btn-gold gp-nav-cta" onClick={() => go("contact")}>
           Schedule a Consultation
           <Arrow />
         </button>
+        <button
+          className={"gp-burger" + (open ? " open" : "")}
+          aria-label="Toggle menu"
+          aria-expanded={open}
+          onClick={() => setOpen(o => !o)}
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+      {/* Mobile drawer */}
+      <div className={"gp-mobile-menu" + (open ? " open" : "")}>
+        <div className="gp-mobile-links">
+          {NAV.map((n, i) => (
+            <a
+              key={n.id}
+              href={`#/${n.id}`}
+              className={active === n.id ? "active" : ""}
+              style={{ transitionDelay: open ? (i * 0.04 + 0.05) + "s" : "0s" }}
+              onClick={(e) => { e.preventDefault(); go(n.id); }}
+            >
+              <span className="idx">{String(i + 1).padStart(2, "0")}</span>
+              {n.label}
+            </a>
+          ))}
+        </div>
+        <button className="gp-btn gp-btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 28 }} onClick={() => go("contact")}>
+          Schedule a Consultation <Arrow />
+        </button>
+        <div className="gp-mobile-foot">
+          <a href="mailto:sales@goldpointdigital.com">sales@goldpointdigital.com</a>
+          <a href="mailto:info@goldpointdigital.com">info@goldpointdigital.com</a>
+        </div>
       </div>
     </nav>
   );
 }
 
 /* ---------- Footer ---------- */
-function Footer({ onNavigate }) {
+export function Footer({ onNavigate }) {
   return (
     <footer className="gp-footer">
       <div className="gp-container">
@@ -113,7 +173,7 @@ function Footer({ onNavigate }) {
         <hr className="gp-rule" style={{ margin: "64px 0 24px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", color: "var(--steel-400)", fontSize: 12, fontFamily: "var(--f-mono)", letterSpacing: "0.06em", textTransform: "uppercase", flexWrap: "wrap", gap: 16 }}>
           <div>© 2026 GoldPoint Digital · All Rights Reserved</div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
             <a href="#/terms" onClick={(e)=>{e.preventDefault();onNavigate("terms");}}>Terms of Use</a>
             <a href="#/privacy" onClick={(e)=>{e.preventDefault();onNavigate("privacy");}}>Privacy Policy</a>
             <a href="#/security" onClick={(e)=>{e.preventDefault();onNavigate("security");}}>Security</a>
@@ -124,7 +184,7 @@ function Footer({ onNavigate }) {
     </footer>
   );
 }
-function FootCol({ title, items, onNavigate }) {
+export function FootCol({ title, items, onNavigate }) {
   return (
     <div>
       <div className="gp-label" style={{ marginBottom: 20 }}>{title}</div>
@@ -145,7 +205,7 @@ function FootCol({ title, items, onNavigate }) {
 }
 
 /* ---------- Small bits ---------- */
-function Arrow({ size = 14 }) {
+export function Arrow({ size = 14 }) {
   return (
     <svg className="arr" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
       <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="square" strokeLinejoin="miter" />
@@ -153,7 +213,7 @@ function Arrow({ size = 14 }) {
   );
 }
 
-function SectionHead({ index, eyebrow, title, lede, align = "left", action }) {
+export function SectionHead({ index, eyebrow, title, lede, align = "left", action }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 32, alignItems: "end", marginBottom: 56, textAlign: align }}>
       <div className="gp-index" style={{ paddingTop: 8 }}>{index}</div>
@@ -168,7 +228,7 @@ function SectionHead({ index, eyebrow, title, lede, align = "left", action }) {
 }
 
 /* ---------- Page Header (sub-pages) ---------- */
-function PageHeader({ kicker, title, lede, meta }) {
+export function PageHeader({ kicker, title, lede, meta }) {
   return (
     <header style={{ paddingTop: 200, paddingBottom: 80, position: "relative", overflow: "hidden" }}>
       <div className="gp-bg-grid" style={{ position: "absolute", inset: 0, opacity: 0.5 }}></div>
@@ -203,7 +263,7 @@ function PageHeader({ kicker, title, lede, meta }) {
 }
 
 /* ---------- Animated counter ---------- */
-function Counter({ to, prefix = "", suffix = "", duration = 1800 }) {
+export function Counter({ to, prefix = "", suffix = "", duration = 1800 }) {
   const ref = useRef(null);
   const [val, setVal] = useState(0);
   useEffect(() => {
@@ -230,7 +290,7 @@ function Counter({ to, prefix = "", suffix = "", duration = 1800 }) {
 }
 
 /* ---------- Service Row ---------- */
-function ServiceRow({ index, title, meta, tags, onClick }) {
+export function ServiceRow({ index, title, meta, tags, onClick }) {
   return (
     <div className="gp-row" onClick={onClick}>
       <span className="gp-index">{index}</span>
@@ -251,7 +311,7 @@ function ServiceRow({ index, title, meta, tags, onClick }) {
 }
 
 /* ---------- Hero Visual: Digital Transformation Growth Chart ---------- */
-function HeroVisual() {
+export function HeroVisual() {
   const [draw, setDraw] = useState(0);
   useEffect(() => {
     const start = performance.now();
@@ -408,7 +468,7 @@ function HeroVisual() {
 }
 
 /* ---------- Placeholder media tile ---------- */
-function MediaPlaceholder({ label = "case study image", ratio = "16/10", tone = "dark", small }) {
+export function MediaPlaceholder({ label = "case study image", ratio = "16/10", tone = "dark", small }) {
   const bg = tone === "gold" ? "linear-gradient(135deg, #2a2010, #14181f)" : "linear-gradient(135deg, #14181f, #0a0e14)";
   return (
     <div style={{ aspectRatio: ratio, background: bg, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -434,7 +494,7 @@ function MediaPlaceholder({ label = "case study image", ratio = "16/10", tone = 
 }
 
 /* ---------- Final CTA (shared) ---------- */
-function FinalCTA({ onNavigate }) {
+export function FinalCTA({ onNavigate }) {
   return (
     <section className="gp-section" style={{ background: "var(--ink-1000)", borderTop: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden" }}>
       <div className="gp-shimmer"></div>
@@ -471,10 +531,3 @@ function FinalCTA({ onNavigate }) {
     </section>
   );
 }
-
-/* Exports */
-export {
-  Reveal, Logo, Nav, Footer, FootCol, Arrow,
-  SectionHead, PageHeader, Counter, ServiceRow,
-  HeroVisual, MediaPlaceholder, FinalCTA,
-};

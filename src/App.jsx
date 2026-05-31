@@ -1,32 +1,36 @@
 // GoldPoint Digital — App router
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Nav, Footer } from "./components.jsx";
-import HomePage from "./pages/home.jsx";
-import ServicesPage from "./pages/services.jsx";
-import SolutionsPage from "./pages/solutions.jsx";
-import IndustriesPage from "./pages/industries.jsx";
-import AboutPage from "./pages/about.jsx";
-import InsightsPage from "./pages/insights.jsx";
-import CareersPage from "./pages/careers.jsx";
-import ContactPage from "./pages/contact.jsx";
-import { PrivacyPage, TermsPage, SecurityPage } from "./pages/legal.jsx";
+import HomePage from "./pages/Home.jsx";
+import ServicesPage from "./pages/Services.jsx";
+import SolutionsPage from "./pages/Solutions.jsx";
+import IndustriesPage from "./pages/Industries.jsx";
+import AboutPage from "./pages/About.jsx";
+import InsightsPage from "./pages/Insights.jsx";
+import CareersPage from "./pages/Careers.jsx";
+import ContactPage from "./pages/Contact.jsx";
+import { PrivacyPage, TermsPage, SecurityPage } from "./pages/Legal.jsx";
 
-function App() {
+export default function App() {
   const initial = (typeof location !== "undefined" && location.hash.replace(/^#\//, "")) || "home";
   const [page, setPage] = useState(initial || "home");
-
-  useEffect(() => {
-    const onHash = () => setPage(location.hash.replace(/^#\//, "") || "home");
-    window.addEventListener("hashchange", onHash);
-    window.addEventListener("gpnav", (e) => navigate(e.detail));
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
 
   const navigate = (id) => {
     setPage(id);
     history.pushState(null, "", "#/" + id);
-    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
+
+  useEffect(() => {
+    const onHash = () => setPage(location.hash.replace(/^#\//, "") || "home");
+    const onGpNav = (e) => navigate(e.detail);
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("gpnav", onGpNav);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("gpnav", onGpNav);
+    };
+  }, []);
 
   let view;
   switch (page) {
@@ -52,5 +56,3 @@ function App() {
     </>
   );
 }
-
-export default App;

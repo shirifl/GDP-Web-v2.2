@@ -1,84 +1,133 @@
-# GoldPoint Digital
+# GoldPoint Digital — Website
 
-Enterprise digital transformation, AI engineering, CRM modernization and growth consulting website. Built as a React single-page application with Vite.
+A production build of the GoldPoint Digital marketing site: a single-page React
+application built with [Vite](https://vitejs.dev/). It ships nine pages (Home,
+Services, Solutions, Industries, About, Insights, Careers, Contact) plus Privacy,
+Terms and Security, all fully responsive from large desktops down to small phones.
 
-## Tech stack
+Both interactive forms — the **consultation booking** form on the Contact page and
+the **newsletter** signup on the Insights page — are wired to
+[Formspree](https://formspree.io/).
 
-- **React 18** + **Vite 5** (production bundling, no in-browser transpilation)
-- **Hash-based routing** (no server config required, works on any static host)
-- **[@formspree/react](https://formspree.io/)** for form handling
-- Pure CSS design system (`src/styles.css`), Google Fonts (Inter Tight, Inter, JetBrains Mono, Newsreader)
+---
 
-## Getting started
+## Quick start
+
+You need [Node.js](https://nodejs.org/) 18 or newer (20+ recommended).
 
 ```bash
 npm install      # install dependencies
-npm run dev      # start the dev server (http://localhost:5173)
-npm run build    # produce a production build in dist/
+npm run dev      # start the local dev server (http://localhost:5173)
+npm run build    # create an optimized production build in dist/
 npm run preview  # preview the production build locally
 ```
+
+---
 
 ## Project structure
 
 ```
-goldpoint-digital/
-├── index.html                 # Vite entry HTML (fonts, favicon, #root)
-├── vite.config.js             # base "./" for portable hosting
-├── public/
-│   └── favicon.png
+.
+├── index.html              # HTML entry (fonts, favicons, social meta)
+├── vite.config.js          # Vite config (base: './' so it works in any folder)
+├── package.json
+├── public/                 # copied verbatim into the build root
+│   ├── favicon.ico, favicon-16x16.png, favicon-32x32.png
+│   ├── apple-touch-icon.png, icon-192.png, icon-512.png
+│   ├── site.webmanifest
+│   └── assets/goldpoint-icon.png
 ├── src/
-│   ├── main.jsx               # React entry point
-│   ├── App.jsx                # router (hash-based) + Nav/Footer shell
-│   ├── styles.css             # design tokens + all component styles
-│   ├── components.jsx         # shared components (Nav, Footer, Reveal, …)
-│   └── pages/                 # Home, Services, Solutions, Industries,
-│                              # About, Insights, Careers, Contact, Legal
-└── .github/workflows/deploy.yml
+│   ├── main.jsx            # mounts <App /> and imports global CSS
+│   ├── App.jsx             # hash-based router (#/services, #/contact, …)
+│   ├── components.jsx      # shared components (Nav, Footer, Hero visual, etc.)
+│   ├── styles.css          # design tokens + all styling + responsive layer
+│   ├── assets/goldpoint-icon.png
+│   └── pages/
+│       ├── Home.jsx  Services.jsx  Solutions.jsx  Industries.jsx
+│       ├── About.jsx  Insights.jsx  Careers.jsx  Contact.jsx
+│       └── Legal.jsx       # Privacy, Terms, Security
+└── .github/workflows/deploy.yml   # CI: build + deploy to GitHub Pages
 ```
 
-## Forms (Formspree)
+Routing is **hash-based** (`#/contact`, `#/insights`, …). This means deep links
+never 404 on a static host — no server rewrite rules are required.
 
-Both forms submit to the Formspree endpoint `mgoqrloj` via `@formspree/react`.
-Each form includes a hidden `form_type` field so submissions are easy to tell
-apart in the Formspree inbox:
+---
 
-| Form                         | Location              | `form_type`            | Fields sent                                  |
-| ---------------------------- | --------------------- | ---------------------- | -------------------------------------------- |
-| Consultation request         | Contact page          | `Consultation Request` | `name`, `email`, `message`, `session`        |
-| Field Notes newsletter       | Insights page         | `Newsletter Signup`    | `email`                                       |
+## Forms & Formspree
 
-Both forms show inline validation errors, disable their submit button while
-sending, and render a success state on completion.
+Both forms submit to a single Formspree form. The form ID lives in two files as a
+constant named `FORMSPREE_ID`:
 
-To point at a different Formspree project, change the form ID passed to
-`useForm("mgoqrloj")` in `src/pages/contact.jsx` and `src/pages/insights.jsx`.
+- `src/pages/Contact.jsx` — consultation booking
+- `src/pages/Insights.jsx` — newsletter signup
 
-## Deployment
+The current ID is **`mgoqrloj`** (endpoint `https://formspree.io/f/mgoqrloj`).
 
-The build uses a **relative base path** (`base: "./"`) and **hash routing**, so
-the same `dist/` output works unchanged on a root domain *or* a subpath such as
-a GitHub Pages project site — no configuration edits needed.
+**To use your own Formspree form**, replace that ID in both files:
 
-### GitHub Pages (included workflow)
+```js
+const FORMSPREE_ID = "your_new_id";
+```
 
-1. Push this repo to GitHub with the default branch named `main`.
-2. In the repo: **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-3. Every push to `main` runs `.github/workflows/deploy.yml`, which builds and
-   publishes `dist/`. The site goes live at `https://<user>.github.io/<repo>/`.
+Each submission includes a hidden `form_type` field so you can tell them apart in
+your Formspree inbox:
 
-### Netlify
+| Form                | `form_type` value          | Extra fields sent                 |
+| ------------------- | -------------------------- | --------------------------------- |
+| Contact page        | `Consultation Request`     | `name`, `email`, `message`, `session` |
+| Insights newsletter | `Newsletter Subscription`  | `email`                           |
 
-Connect the repo (config is in `netlify.toml`) or drag-and-drop the `dist/`
-folder. Build command `npm run build`, publish directory `dist`.
+The integration uses the official [`@formspree/react`](https://github.com/formspree/formspree-js/tree/master/packages/formspree-react)
+package (`useForm` + `ValidationError`), which handles submission state, inline
+validation errors and the success view automatically.
 
-### Vercel
+---
 
-Import the repo. Settings are detected from `vercel.json` (Vite framework,
-build `npm run build`, output `dist`).
+## Deploying
 
-## Notes
+The site builds to a static `dist/` folder, so it can be hosted anywhere.
 
-- Image placeholders (`MediaPlaceholder`) are intentional and ready for real
-  client logos, leadership portraits and case-study photography.
-- Contact emails used site-wide: `info@goldpointdigital.com`,
-  `sales@goldpointdigital.com`.
+### Option A — GitHub Pages (automated, included)
+
+1. Push this repository to GitHub.
+2. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. Push to the `main` branch. The workflow in `.github/workflows/deploy.yml`
+   builds the site and publishes it automatically. Your site appears at
+   `https://<username>.github.io/<repo>/`.
+
+Because `vite.config.js` sets `base: './'`, the site works correctly whether it's
+served from a domain root **or** a GitHub Pages subpath — no config change needed.
+
+### Option B — Netlify / Vercel / Cloudflare Pages
+
+Connect the repo and use:
+
+- **Build command:** `npm run build`
+- **Publish directory:** `dist`
+
+Or simply run `npm run build` locally and drag the `dist/` folder onto
+Netlify Drop (https://app.netlify.com/drop).
+
+### Option C — any static host
+
+Run `npm run build` and upload the contents of `dist/` to your host
+(S3, nginx, Apache, etc.). No special server configuration is required.
+
+---
+
+## Customizing
+
+- **Contact emails** — the site uses `info@goldpointdigital.com` and
+  `sales@goldpointdigital.com`. Search the `src/` folder for these to update them.
+- **Colors / typography** — all design tokens are CSS variables defined at the top
+  of `src/styles.css` (ink black, ivory, champagne gold, fonts).
+- **Content** — page copy lives in the corresponding file under `src/pages/`.
+- **Favicons / social preview** — replace the images in `public/` and update the
+  `<meta>` tags in `index.html`.
+
+---
+
+## Tech
+
+React 18 · Vite 5 · @formspree/react · hash routing · zero runtime CSS framework.
